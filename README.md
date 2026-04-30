@@ -1,4 +1,4 @@
-# Artix Install Guide
+# Artix Installation Guide
 
 Good morning, good afternoon or good evening, wherever you are reading this from. These installation instructions form the foundation of the Artix system that I use on my own Librebooted T480.
 
@@ -14,7 +14,7 @@ This guide uses the following stack:
 - [ly](https://github.com/fairyglade/ly): A lightweight TUI display manager.
 
 > [!note] **BIOS vs UEFI**
-> This guide includes instructions for both BIOS/SeaBIOS and UEFI systems. Steps that differ between the two are clearly marked with **[BIOS]** and **[UEFI]** labels. Steps with no label apply to both.
+> This guide includes instructions for both BIOS/SeaBIOS and UEFI systems. Steps that differ between the two are clearly marked with **[BIOS]** and **[UEFI]** labels.
 
 > [!note] **btrfs subvolumes**
 > This guide creates the following subvolumes:
@@ -26,17 +26,15 @@ This guide uses the following stack:
 > | `@snapshots` | `/.snapshots` | required by snapper as its own subvolume |
 > | `@log`       | `/var/log`    | logs persist across rollbacks            |
 > | `@cache`     | `/var/cache`  | package cache, excluded from snapshots   |
->
-> Snapshots are not configured in this guide but the layout is compatible with snapper and can be added later without reformatting.
 
 > [!note] **zswap vs zram**
-> This guide uses zswap with a swap partition. zswap is a kernel-level compressed cache that sits in front of your swap partition, compressing pages in RAM before they are written to disk. It requires no additional packages. zswap and zram are **not compatible** -- do not enable both.
+> This guide uses zswap with a swap partition. zswap is a kernel-level compressed cache that sits in front of your swap partition, compressing pages in RAM before they are written to disk. It requires no additional packages. zswap and zram are **not compatible** - do not enable both.
 
 > [!note] **Partition labels and LUKS**
 > The official Artix docs use partition labels (ROOT, HOME, SWAP) for unencrypted setups. Since this guide uses LUKS, the encrypted container is opaque from the outside and labels are not meaningful. The boot process relies on the LUKS UUID in the GRUB cmdline instead.
 
 > [!note] **OpenRC service packages**
-> On Artix, many packages require a separate `-openrc` variant to include the OpenRC service file. The base package alone will not register a service. This guide installs the correct variants throughout.
+> On Artix, many packages require a separate `-openrc` config package to include the OpenRC service file. The base package alone will not register a service.
 
 Let's get started!
 
@@ -52,7 +50,7 @@ ii. Verify the signature on the downloaded ISO image;
 
 iii. Write your ISO to a USB (check out [this](https://www.scaler.com/topics/burn-linux-iso-to-usb/) guide); and,
 
-iv. Insert the USB into your target device and boot into it. Log in as `root` - no password is required.
+iv. Insert the USB into your target device and boot into it. Log in as `root`.
 
 > [!tip] OPTIONAL: Increase the console font size
 >
@@ -68,14 +66,14 @@ iv. Insert the USB into your target device and boot into it. Log in as `root` - 
 >
 > - Set a password for the ISO root user with `passwd`;
 > - Start the ssh service with `rc-service openssh start`; and,
-> - Obtain your IP address with `ip addr show` -- you can now ssh in from another machine.
+> - Obtain your IP address with `ip addr show` (you can now ssh in from another machine).
 
 i. Set the console keyboard layout (US by default):
 
 - list available keymaps with `ls -R /usr/share/kbd/keymaps`; and,
 - load your keymap with `loadkeys <your-keymap>`.
 
-ii. Verify your boot mode -- the following returns nothing or an error on BIOS, and a list of variables on UEFI:
+ii. Verify your boot mode - the following returns nothing or an error on BIOS, and a list of variables on UEFI:
 
 ```bash
 ls /sys/firmware/efi/efivars
@@ -84,6 +82,7 @@ ls /sys/firmware/efi/efivars
 iii. Connect to the internet:
 
 - the Artix ISO ships with `connman` already running (wired connections are automatic); and,
+
 - confirm your connection with `ping -c 2 artixlinux.org`.
 
 > [!tip] OPTIONAL: Connect to WiFi
@@ -119,7 +118,7 @@ v. Partition your disk:
 | `/dev/nvme0n1p2` | Match your RAM  | Linux swap       |
 | `/dev/nvme0n1p3` | Remaining space | Linux filesystem |
 
-> [!note] On a BIOS/MBR dos layout, cfdisk has no dedicated BIOS Boot type. Leave the 2MB partition as a primary Linux partition -- GRUB will write to it correctly regardless.
+> [!note] On a BIOS/MBR dos layout, cfdisk has no dedicated BIOS Boot type. Leave the 2MB partition as a primary Linux partition - GRUB will write to it correctly regardless.
 
 **[UEFI]** Select `gpt` label type and create the following partitions:
 
@@ -129,7 +128,7 @@ v. Partition your disk:
 | `/dev/nvme0n1p2` | Match your RAM  | Linux swap       |
 | `/dev/nvme0n1p3` | Remaining space | Linux filesystem |
 
-When done **Write** and **Quit**.
+Then **Write** and **Quit**.
 
 vi. Format your partitions:
 
@@ -211,7 +210,7 @@ xi. Generate the filesystem table:
 fstabgen -U /mnt >> /mnt/etc/fstab
 ```
 
-Verify with `cat /mnt/etc/fstab` to check that all subvolumes, swap, and (if UEFI) boot entries are present and correct before continuing.
+Verify with `cat /mnt/etc/fstab` to check that all subvolumes, swap, and boot entries are present and correct before continuing (if using UEFI).
 
 xii. Change root into the new system:
 
@@ -227,6 +226,8 @@ You are now working within your new Artix base system (i.e. not from the ISO) an
 
 We are now working within our Artix system on our device, but it's important to note that we can't yet reboot our machine. Let's continue with a few steps that we need to repeat again (such as setting our root password, timezones, keymaps and language) given the previous settings were in the context of our ISO.
 
+> [!note] You are now running as root inside the chroot. Do not use `sudo` in this section.
+
 i. Configure the timezone:
 
 ```bash
@@ -239,7 +240,7 @@ ii. Configure the hardware clock:
 hwclock --systohc
 ```
 
-iii. Configure locales -- in `nvim /etc/locale.gen` uncomment your locale (e.g. `en_US.UTF-8`), write and exit, then run:
+iii. Configure locales - in `nvim /etc/locale.gen` uncomment your locale (e.g. `en_US.UTF-8`), write and exit, then run:
 
 ```bash
 locale-gen
@@ -343,8 +344,11 @@ pacman -Syu \
   grub \                   # bootloader
   elogind \                # login session manager
   dbus \                   # inter-process messaging
+  dbus-openrc \            # OpenRC service file
   polkit \                 # privilege authorisation
-  xdg-user-dirs            # standard home directories
+  xdg-user-dirs \          # standard home directories
+  udevil \                 # USB automounting
+  udevil-openrc            # OpenRC service file
 ```
 
 **[UEFI only]** Also install:
@@ -364,6 +368,7 @@ xi. Install audio:
 pacman -S \
   pipewire \             # audio server
   pipewire-audio \       # audio support
+  pipewire-alsa \        # ALSA routing
   pipewire-pulse \       # PulseAudio replacement
   pipewire-jack \        # JACK replacement
   wireplumber \          # session manager
@@ -384,31 +389,36 @@ xiii. Install Qtile, ly, and Wayland dependencies:
 
 ```bash
 pacman -S \
-  ly \                     # display manager
-  qtile \                  # window manager
-  python-pywlroots \       # Wayland backend
-  python-pywayland \       # Wayland bindings
-  python-xkbcommon \       # keyboard handling
-  xorg-xwayland \          # X11 compatibility
-  wlr-randr \              # display management
-  swaylock \               # screen locker
-  swaybg \                 # wallpaper setter
-  lxqt-policykit \         # polkit auth agent
-  xdg-desktop-portal-wlr \ # screen sharing, file pickers
-  python-psutil \          # system stats widgets
-  qt5-wayland \            # Qt5 Wayland support
-  qt6-wayland \            # Qt6 Wayland support
-  grim \                   # screenshot tool
-  slurp \                  # region selector
-  wl-clipboard \           # clipboard support
-  mako \                   # notification daemon
-  brightnessctl \          # brightness control
-  playerctl                # media key support
+  ly \                      # display manager
+  ly-openrc \               # OpenRC service file
+  qtile \                   # window manager
+  python-pywlroots \        # Wayland backend
+  python-pywayland \        # Wayland bindings
+  python-xkbcommon \        # keyboard handling
+  xorg-xwayland \           # X11 compatibility
+  wlr-randr \               # display management
+  swaylock \                # screen locker
+  swaybg \                  # wallpaper setter
+  lxqt-policykit \          # polkit auth agent
+  xdg-desktop-portal \      # portal base layer
+  xdg-desktop-portal-wlr \  # screen sharing, file pickers
+  python-psutil \           # system stats widgets
+  qt5-wayland \             # Qt5 Wayland support
+  qt6-wayland \             # Qt6 Wayland support
+  grim \                    # screenshot tool
+  slurp \                   # region selector
+  wl-clipboard \            # Wayland clipboard
+  xclip \                   # X11 app clipboard
+  mako \                    # notification daemon
+  brightnessctl \           # brightness control
+  playerctl                 # media key support
 ```
 
 > [!note] `rofi-wayland` is an AUR package and will be installed via `paru` after the first boot in Step 4.
 
 > [!note] If `qtile` is not found, ensure the Arch repos were added correctly in Step 3 (viii) and run `pacman -Syu` before retrying.
+
+> [!note] To verify the correct path for the polkit agent after installation, run `find /usr -name "lxqt-policykit-agent"` and update your Qtile autostart accordingly.
 
 xiv. Install a file manager and supporting utilities:
 
@@ -416,6 +426,7 @@ xiv. Install a file manager and supporting utilities:
 pacman -S \
   thunar \               # file manager
   gvfs \                 # trash, USB mounting
+  gvfs-mtp \             # Android device support
   pavucontrol            # audio volume control
 ```
 
@@ -431,7 +442,15 @@ pacman -S \
   firefox                # web browser
 ```
 
-xvi. Configure the firewall:
+xvi. Configure USB automounting:
+
+```bash
+rc-update add devmon default
+```
+
+> [!note] `udevil` provides the `devmon` service which watches for USB devices and mounts them automatically under `/media`. Thunar will show mounted devices in its sidebar without any further configuration.
+
+xvii. Configure the firewall:
 
 ```bash
 rc-update add firewalld default
@@ -440,7 +459,7 @@ firewall-cmd --permanent --add-service=ssh
 firewall-cmd --reload
 ```
 
-xvii. Configure mkinitcpio for LUKS + btrfs:
+xviii. Configure mkinitcpio for LUKS + btrfs:
 
 Edit `/etc/mkinitcpio.conf` and set your MODULES and HOOKS lines to:
 
@@ -463,7 +482,7 @@ Regenerate the initramfs:
 mkinitcpio -P
 ```
 
-xviii. Configure GRUB:
+xix. Configure GRUB:
 
 **[BIOS]** Install GRUB to your disk:
 
@@ -483,11 +502,13 @@ Get the UUID of your LUKS partition and append it to the grub defaults file for 
 blkid -s UUID -o value /dev/nvme0n1p3 >> /etc/default/grub
 ```
 
-Edit `/etc/default/grub` and set the following -- replacing `<uuid>` with the value appended at the bottom of the file, then delete that line:
+Edit `/etc/default/grub` and set the following - replacing `<uuid>` with the value appended at the bottom of the file, then delete that line:
 
 ```
 GRUB_ENABLE_CRYPTODISK=y
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet zswap.enabled=1 cryptdevice=UUID=<uuid>:main root=/dev/mapper/main"
+GRUB_GFXMODE=1920x1080x32
+GRUB_GFXPAYLOAD_LINUX=keep
 ```
 
 > [!note] `GRUB_ENABLE_CRYPTODISK=y` is required because `/boot` resides inside the LUKS-encrypted partition. Without it, GRUB cannot read the kernel and initramfs at boot. This means you will be prompted for your LUKS password **twice** on boot (once by GRUB to load the kernel, and once by the initramfs to mount root).
@@ -500,7 +521,13 @@ Generate the GRUB config:
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-xix. Enable services:
+xx. Set up standard home directories:
+
+```bash
+xdg-user-dirs-update
+```
+
+xxi. Enable services:
 
 ```bash
 rc-update add NetworkManager default
@@ -510,19 +537,21 @@ rc-update add ly default
 rc-update add firewalld default
 rc-update add acpid default
 rc-update add cronie default
+rc-update add dbus default
+rc-update add devmon default
 ```
 
-xx. Set up cron jobs for periodic maintenance:
+xxii. Set up cron jobs for periodic maintenance:
 
 ```bash
 # weekly SSD trim
 echo "@weekly root fstrim -av" >> /etc/cron.d/fstrim
 
-# weekly mirrorlist update -- substitute Thailand with your location
-echo "@weekly root reflector -c Thailand -a 12 --sort rate --save /etc/pacman.d/mirrorlist" >> /etc/cron.d/reflector
+# weekly mirrorlist update - substitute Singapore with your location
+echo "@weekly root reflector -c Singapore -a 12 --sort rate --save /etc/pacman.d/mirrorlist" >> /etc/cron.d/reflector
 ```
 
-xxi. Reboot:
+xxiii. Reboot:
 
 ```bash
 exit
@@ -530,7 +559,7 @@ umount -R /mnt
 reboot
 ```
 
-> [!note] **BIOS/SeaBIOS users:** After installation, press Escape at POST to access the SeaBIOS boot menu and select your NVMe. A brief blank screen before the GRUB menu is normal -- it is the handoff from SeaBIOS to GRUB.
+> [!note] **BIOS/SeaBIOS users:** After installation, press Escape at POST to access the SeaBIOS boot menu and select your NVMe. A brief blank screen before the GRUB menu is normal - it is the handoff from SeaBIOS to GRUB.
 
 ---
 
@@ -538,7 +567,13 @@ reboot
 
 Upon successful decryption, ly will start. Log in with the user you created earlier and select the Qtile Wayland session.
 
-i. Install [paru](https://github.com/Morganamilo/paru):
+i. Connect to WiFi if needed:
+
+```bash
+nmtui
+```
+
+ii. Install [paru](https://github.com/Morganamilo/paru):
 
 ```bash
 sudo pacman -S --needed base-devel
@@ -547,31 +582,36 @@ cd paru
 makepkg -si
 ```
 
-ii. Install rofi-wayland:
+iii. Install rofi-wayland:
 
 ```bash
 paru -S rofi-wayland
 ```
 
-iii. Configure Qtile:
+iv. Configure Qtile:
 
-Qtile's config lives at `~/.config/qtile/config.py`. On first login Qtile will use its built-in default config if none is present, which is functional but minimal. I will do a Qtile ricing video on this soon (and link it here).
+Qtile's config lives at `~/.config/qtile/config.py`. Create the directory if it does not exist:
 
-You must autostart the following processes in your Qtile config. Without them, audio will not initialise and GUI apps requiring elevated permissions will silently fail:
-
-```python
-import subprocess
-from libqtile import hook
-
-@hook.subscribe.startup_once
-def autostart():
-    subprocess.Popen(['pipewire'])
-    subprocess.Popen(['pipewire-pulse'])
-    subprocess.Popen(['wireplumber'])
-    subprocess.Popen(['/usr/lib/policykit-1-lxqt/lxqt-policykit-agent'])
+```bash
+mkdir -p ~/.config/qtile
 ```
 
-> [!note] On Wayland + OpenRC, PipeWire is not started automatically by a systemd user service. It must be launched manually at login via the Qtile autostart hook as shown above. `lxqt-policykit-agent` is the polkit authentication agent (it handles password prompts when GUI apps request elevated permissions such as mounting drives or changing system settings).
+On first login Qtile will use its built-in default config if none is present, which is functional but minimal. I will cover Qtile configuration in a separate video.
+
+---
+
+## Recovery
+
+If you cannot boot into your system, boot from your Artix USB, open the encrypted partition and chroot back in:
+
+```bash
+cryptsetup luksOpen /dev/nvme0n1p3 main
+mount -o noatime,compress=zstd,discard=async,subvol=@ /dev/mapper/main /mnt
+mount -o noatime,compress=zstd,discard=async,subvol=@home /dev/mapper/main /mnt/home
+artix-chroot /mnt
+```
+
+From here you can fix your GRUB config, reinstall packages, or regenerate the initramfs as needed.
 
 ---
 
@@ -606,7 +646,24 @@ sudo pacman -S snapper
 sudo snapper -c root create-config /
 ```
 
-> [!note] Snapper expects to manage `/.snapshots` itself. Do not pre-populate the `@snapshots` subvolume before running snapper for the first time. The subvolume layout in this guide is fully compatible with snapper out of the box. Refer to the [Arch Wiki snapper page](https://wiki.archlinux.org/title/Snapper) for full configuration.
+> [!note] Snapper expects to manage `/.snapshots` itself. If it complains that `/.snapshots` already exists, run the following to let snapper create and own the subvolume itself:
+>
+> ```bash
+> umount /.snapshots
+> btrfs subvolume delete /.snapshots
+> snapper -c root create-config /
+> ```
+
+Then install the GRUB integration and pacman hook:
+
+```bash
+paru -S grub-btrfs snap-pac grub-btrfs-openrc
+rc-update add grub-btrfsd default
+rc-service grub-btrfsd start
+grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+> [!note] `snap-pac` creates a snapshot automatically before and after every pacman operation (i.e. installs, upgrades and removals). `grub-btrfsd` watches for new snapshots and updates the GRUB menu dynamically, so your snapshots will always be available as a boot option without any manual steps. Refer to the [Arch Wiki snapper page](https://wiki.archlinux.org/title/Snapper) for full configuration.
 
 ---
 
