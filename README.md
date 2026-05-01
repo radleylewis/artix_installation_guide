@@ -10,7 +10,7 @@ This guide uses the following stack:
 - [btrfs](https://btrfs.readthedocs.io/en/latest/): A feature-rich, copy-on-write filesystem for Linux.
 - [LUKS](https://gitlab.com/cryptsetup/cryptsetup/): Full disk encryption based on the dm-crypt kernel module.
 - [zswap](https://www.kernel.org/doc/html/latest/admin-guide/mm/zswap.html): A compressed write-back cache for swap pages, built into the Linux kernel.
-- [Qtile](https://qtile.org/): A full-featured, hackable tiling window manager written and configured in Python.
+- [Qtile](https://qtile.org/): A full-featured, hackable tiling window manager built/configured with Python.
 - [ly](https://github.com/fairyglade/ly): A lightweight TUI display manager.
 
 > [!note] **BIOS vs UEFI**
@@ -73,7 +73,7 @@ i. Set the console keyboard layout (US by default):
 - list available keymaps with `ls -R /usr/share/kbd/keymaps`; and,
 - load your keymap with `loadkeys <your-keymap>`.
 
-ii. Verify your boot mode - the following returns nothing or an error on BIOS, and a list of variables on UEFI:
+ii. Verify your boot mode: the following returns nothing or an error on BIOS, and a list of variables on UEFI:
 
 ```bash
 ls /sys/firmware/efi/efivars
@@ -84,18 +84,6 @@ iii. Connect to the internet:
 - the Artix ISO ships with `connman` already running (wired connections are automatic); and,
 
 - confirm your connection with `ping -c 2 artixlinux.org`.
-
-> [!tip] OPTIONAL: Connect to WiFi
->
-> ```bash
-> connmanctl
-> enable wifi
-> scan wifi
-> agent on
-> services
-> connect wifi_<tab to complete>
-> quit
-> ```
 
 iv. Update the system clock:
 
@@ -118,8 +106,6 @@ v. Partition your disk:
 | `/dev/nvme0n1p2` | Match your RAM  | Linux swap       |
 | `/dev/nvme0n1p3` | Remaining space | Linux filesystem |
 
-> [!note] On a BIOS/MBR dos layout, cfdisk has no dedicated BIOS Boot type. Leave the 2MB partition as a primary Linux partition - GRUB will write to it correctly regardless.
-
 **[UEFI]** Select `gpt` label type and create the following partitions:
 
 | Partition        | Size            | Type             |
@@ -138,10 +124,11 @@ mkswap -L SWAP /dev/nvme0n1p2
 swapon /dev/nvme0n1p2
 ```
 
-**[UEFI only]** Format the EFI partition:
+**[UEFI only]** Format the EFI System Partition (ESP):
 
 ```bash
 mkfs.fat -F32 /dev/nvme0n1p1
+fatlabel /dev/nvme0n1p1 ESP
 ```
 
 ```bash
@@ -172,11 +159,11 @@ umount /mnt
 viii. Mount subvolumes:
 
 ```bash
-# root
-mount -o noatime,compress=zstd,discard=async,subvol=@ /dev/mapper/main /mnt
-
 # create mount points
 mkdir -p /mnt/{home,.snapshots,var/log,var/cache}
+
+# root
+mount -o noatime,compress=zstd,discard=async,subvol=@ /dev/mapper/main /mnt
 
 # home
 mount -o noatime,compress=zstd,discard=async,subvol=@home /dev/mapper/main /mnt/home
@@ -224,14 +211,14 @@ You are now working within your new Artix base system (i.e. not from the ISO) an
 
 ## Step 3: Working Within Our New Base System
 
-We are now working within our Artix system on our device, but it's important to note that we can't yet reboot our machine. Let's continue with a few steps that we need to repeat again (such as setting our root password, timezones, keymaps and language) given the previous settings were in the context of our ISO.
+We are now working within our Artix system on our device, DO NOT REBOOT yet though! Let's continue with a few steps that we need to repeat again (such as setting our root password, timezones, keymaps and language) given the previous settings were in the context of our ISO.
 
-> [!note] You are now running as root inside the chroot. Do not use `sudo` in this section.
+> [!note] You are now running as root inside the chroot (i.e. no `sudo`).
 
-i. Configure the timezone:
+i. Configure the timezone (replace Asia/Bangkok with your city/timezone):
 
 ```bash
-ln -sf /usr/share/zoneinfo/Region/City /etc/localtime
+ln -sf /usr/share/zoneinfo/Asia/Bangkok /etc/localtime
 ```
 
 ii. Configure the hardware clock:
@@ -288,7 +275,7 @@ echo "rad ALL=(ALL) ALL" >> /etc/sudoers.d/rad
 chmod 0440 /etc/sudoers.d/rad   # read-only for root and group; visudo will refuse otherwise
 ```
 
-vii. Set the mirrorlist (substitute Singapore with your location):
+vii. Set the mirrorlist (substitute Singapore with your best location/country):
 
 ```bash
 pacman -S reflector
@@ -303,7 +290,7 @@ Artix does not mirror every Arch package. Adding the Arch repos gives access to 
 pacman -S artix-archlinux-support
 ```
 
-Add the following to `/etc/pacman.conf` **after** your existing Artix repos:
+Append the following to `/etc/pacman.conf` after  your existing Artix repos (at the bottom):
 
 ```
 [extra]
@@ -346,9 +333,7 @@ pacman -Syu \
   dbus \                   # inter-process messaging
   dbus-openrc \            # OpenRC service file
   polkit \                 # privilege authorisation
-  xdg-user-dirs \          # standard home directories
-  udevil \                 # USB automounting
-  udevil-openrc            # OpenRC service file
+  xdg-user-dirs            # standard home directories
 ```
 
 **[UEFI only]** Also install:
@@ -414,8 +399,6 @@ pacman -S \
   playerctl                 # media key support
 ```
 
-> [!note] `rofi-wayland` is an AUR package and will be installed via `paru` after the first boot in Step 4.
-
 > [!note] If `qtile` is not found, ensure the Arch repos were added correctly in Step 3 (viii) and run `pacman -Syu` before retrying.
 
 > [!note] To verify the correct path for the polkit agent after installation, run `find /usr -name "lxqt-policykit-agent"` and update your Qtile autostart accordingly.
@@ -430,7 +413,7 @@ pacman -S \
   pavucontrol            # audio volume control
 ```
 
-xv. Install fonts, terminal and browser:
+xv. Install fonts, terminal, window switcher (rofi) and browser:
 
 ```bash
 pacman -S \
@@ -439,18 +422,11 @@ pacman -S \
   texinfo \              # info pages
   ttf-firacode-nerd \    # nerd font
   kitty \                # terminal emulator
-  firefox                # web browser
+  firefox  \             # web browser
+  rofi                   # rofi now supports wayland 
 ```
 
-xvi. Configure USB automounting:
-
-```bash
-rc-update add devmon default
-```
-
-> [!note] `udevil` provides the `devmon` service which watches for USB devices and mounts them automatically under `/media`. Thunar will show mounted devices in its sidebar without any further configuration.
-
-xvii. Configure the firewall:
+xvi. Configure the firewall:
 
 ```bash
 rc-update add firewalld default
@@ -459,16 +435,9 @@ firewall-cmd --permanent --add-service=ssh
 firewall-cmd --reload
 ```
 
-xviii. Configure mkinitcpio for LUKS + btrfs:
+xvii. Configure mkinitcpio for LUKS + btrfs:
 
 Edit `/etc/mkinitcpio.conf` and set your MODULES and HOOKS lines to:
-
-```
-MODULES=(btrfs)
-HOOKS=(base udev autodetect modconf kms keyboard keymap block encrypt filesystems)
-```
-
-> [!note] `fsck` is removed from HOOKS (it is not required for btrfs). `consolefont` is removed as it requires `terminus-font` and serves no purpose at the LUKS prompt. This guide uses a `udev`-based initramfs. If you are using a `systemd`-based initramfs, replace `encrypt` with `sd-encrypt`.
 
 > [!tip] OPTIONAL: If you use an external USB keyboard and need it available at the LUKS prompt, add `usbhid` and `atkbd` to MODULES:
 >
@@ -476,13 +445,19 @@ HOOKS=(base udev autodetect modconf kms keyboard keymap block encrypt filesystem
 > MODULES=(btrfs usbhid atkbd)
 > ```
 
+```
+MODULES=(btrfs)
+HOOKS=(base udev autodetect modconf kms keyboard keymap block encrypt filesystems)
+```
+
+> [!note] `fsck` is removed from HOOKS (it is not required for btrfs). `consolefont` is removed as it requires `terminus-font` and serves no purpose at the LUKS prompt. This guide uses a `udev`-based initramfs. If you are using a `systemd`-based initramfs, replace `encrypt` with `sd-encrypt`.
 Regenerate the initramfs:
 
 ```bash
 mkinitcpio -P
 ```
 
-xix. Configure GRUB:
+xviii. Configure GRUB:
 
 **[BIOS]** Install GRUB to your disk:
 
@@ -507,8 +482,6 @@ Edit `/etc/default/grub` and set the following - replacing `<uuid>` with the val
 ```
 GRUB_ENABLE_CRYPTODISK=y
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet zswap.enabled=1 cryptdevice=UUID=<uuid>:main root=/dev/mapper/main"
-GRUB_GFXMODE=1920x1080x32
-GRUB_GFXPAYLOAD_LINUX=keep
 ```
 
 > [!note] `GRUB_ENABLE_CRYPTODISK=y` is required because `/boot` resides inside the LUKS-encrypted partition. Without it, GRUB cannot read the kernel and initramfs at boot. This means you will be prompted for your LUKS password **twice** on boot (once by GRUB to load the kernel, and once by the initramfs to mount root).
@@ -521,13 +494,7 @@ Generate the GRUB config:
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-xx. Set up standard home directories:
-
-```bash
-xdg-user-dirs-update
-```
-
-xxi. Enable services:
+xix. Enable services:
 
 ```bash
 rc-update add NetworkManager default
@@ -538,10 +505,9 @@ rc-update add firewalld default
 rc-update add acpid default
 rc-update add cronie default
 rc-update add dbus default
-rc-update add devmon default
 ```
 
-xxii. Set up cron jobs for periodic maintenance:
+xx. Set up cron jobs for periodic maintenance:
 
 ```bash
 # weekly SSD trim
@@ -551,15 +517,13 @@ echo "@weekly root fstrim -av" >> /etc/cron.d/fstrim
 echo "@weekly root reflector -c Singapore -a 12 --sort rate --save /etc/pacman.d/mirrorlist" >> /etc/cron.d/reflector
 ```
 
-xxiii. Reboot:
+xxi. Reboot:
 
 ```bash
 exit
 umount -R /mnt
 reboot
 ```
-
-> [!note] **BIOS/SeaBIOS users:** After installation, press Escape at POST to access the SeaBIOS boot menu and select your NVMe. A brief blank screen before the GRUB menu is normal - it is the handoff from SeaBIOS to GRUB.
 
 ---
 
@@ -573,19 +537,20 @@ i. Connect to WiFi if needed:
 nmtui
 ```
 
-ii. Install [paru](https://github.com/Morganamilo/paru):
+ii. Set up standard home directories for your user:
+
+```bash
+xdg-user-dirs-update
+```
+
+
+iii. Install [paru](https://github.com/Morganamilo/paru):
 
 ```bash
 sudo pacman -S --needed base-devel
 git clone https://aur.archlinux.org/paru.git
 cd paru
 makepkg -si
-```
-
-iii. Install rofi-wayland:
-
-```bash
-paru -S rofi-wayland
 ```
 
 iv. Configure Qtile:
@@ -596,7 +561,7 @@ Qtile's config lives at `~/.config/qtile/config.py`. Create the directory if it 
 mkdir -p ~/.config/qtile
 ```
 
-On first login Qtile will use its built-in default config if none is present, which is functional but minimal. I will cover Qtile configuration in a separate video.
+On first login Qtile will use its built-in default config if none is present, which is functional but minimal. Check out my config [here](https://github.com/radleylewis/qtile).
 
 ---
 
@@ -663,7 +628,7 @@ rc-service grub-btrfsd start
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-> [!note] `snap-pac` creates a snapshot automatically before and after every pacman operation (i.e. installs, upgrades and removals). `grub-btrfsd` watches for new snapshots and updates the GRUB menu dynamically, so your snapshots will always be available as a boot option without any manual steps. Refer to the [Arch Wiki snapper page](https://wiki.archlinux.org/title/Snapper) for full configuration.
+> [!note] `snap-pac` creates a snapshot automatically before and after every pacman operation (i.e. installs, upgrades and removals). `grub-btrfsd` watches for new snapshots and updates the GRUB menu dynamically, so your snapshots will always be available as a boot option without any manual steps. Arch snapper docs [here](https://wiki.archlinux.org/title/Snapper).
 
 ---
 
