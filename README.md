@@ -1,5 +1,7 @@
 # Artix Installation Guide
 
+Check out the accompanying video tutorial [here](https://www.youtube.com/watch?v=kX4wGhn949I).
+
 Good morning, good afternoon or good evening, wherever you are reading this from. These installation instructions form the foundation of the Artix system that I use on my own Librebooted T480.
 
 The Artix Linux documentation can be found [here](https://wiki.artixlinux.org/Main/Installation).
