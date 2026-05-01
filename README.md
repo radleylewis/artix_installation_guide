@@ -451,6 +451,7 @@ HOOKS=(base udev autodetect modconf kms keyboard keymap block encrypt filesystem
 ```
 
 > [!note] `fsck` is removed from HOOKS (it is not required for btrfs). `consolefont` is removed as it requires `terminus-font` and serves no purpose at the LUKS prompt. This guide uses a `udev`-based initramfs. If you are using a `systemd`-based initramfs, replace `encrypt` with `sd-encrypt`.
+
 Regenerate the initramfs:
 
 ```bash
@@ -543,7 +544,6 @@ ii. Set up standard home directories for your user:
 xdg-user-dirs-update
 ```
 
-
 iii. Install [paru](https://github.com/Morganamilo/paru):
 
 ```bash
@@ -564,7 +564,6 @@ mkdir -p ~/.config/qtile
 On first login Qtile will use its built-in default config if none is present, which is functional but minimal. Check out my config [here](https://github.com/radleylewis/qtile).
 
 ---
-
 ## Recovery
 
 If you cannot boot into your system, boot from your Artix USB, open the encrypted partition and chroot back in:
@@ -579,7 +578,6 @@ artix-chroot /mnt
 From here you can fix your GRUB config, reinstall packages, or regenerate the initramfs as needed.
 
 ---
-
 ## Optional Further Steps
 
 i. Install `power-profiles-daemon`:
@@ -590,21 +588,13 @@ sudo rc-update add power-profiles-daemon default
 sudo rc-service power-profiles-daemon start
 ```
 
-ii. Install [auto-cpufreq](https://github.com/AdnanHodzic/auto-cpufreq):
-
-```bash
-paru -S auto-cpufreq
-sudo rc-update add auto-cpufreq default
-sudo rc-service auto-cpufreq start
-```
-
-iii. Install `brave-browser`:
+ii. Install `brave-browser`:
 
 ```bash
 paru -S brave-browser
 ```
 
-iv. Add snapper for btrfs snapshots (when ready):
+iii. Add snapper for btrfs snapshots (when ready):
 
 ```bash
 sudo pacman -S snapper
@@ -622,13 +612,45 @@ sudo snapper -c root create-config /
 Then install the GRUB integration and pacman hook:
 
 ```bash
-paru -S grub-btrfs snap-pac grub-btrfs-openrc
-rc-update add grub-btrfsd default
-rc-service grub-btrfsd start
-grub-mkconfig -o /boot/grub/grub.cfg
+paru -S grub-btrfs snap-pac
 ```
 
-> [!note] `snap-pac` creates a snapshot automatically before and after every pacman operation (i.e. installs, upgrades and removals). `grub-btrfsd` watches for new snapshots and updates the GRUB menu dynamically, so your snapshots will always be available as a boot option without any manual steps. Arch snapper docs [here](https://wiki.archlinux.org/title/Snapper).
+Enable the pacman hook by ensuring `HookDir` is set in `/etc/pacman.conf`:
+
+```ini
+HookDir = /etc/pacman.d/hooks/
+```
+
+Then create the hooks directory and hook file:
+
+```bash
+sudo mkdir -p /etc/pacman.d/hooks
+sudo nvim /etc/pacman.d/hooks/grub-btrfs.hook
+```
+
+Paste the following:
+
+```ini
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = Package
+Target = *
+
+[Action]
+Description = Updating grub-btrfs snapshots...
+When = PostTransaction
+Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+Run once manually to populate the GRUB menu immediately:
+
+```bash
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+> [!note] `snap-pac` creates a snapshot automatically before and after every pacman operation (i.e. installs, upgrades and removals). The pacman hook updates the GRUB menu after every transaction, so your snapshots will always be available as a boot option without any manual steps. Arch snapper docs [here](https://wiki.archlinux.org/title/Snapper).
 
 ---
 
