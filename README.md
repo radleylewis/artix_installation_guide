@@ -580,21 +580,13 @@ From here you can fix your GRUB config, reinstall packages, or regenerate the in
 ---
 ## Optional Further Steps
 
-i. Install `power-profiles-daemon`:
-
-```bash
-sudo pacman -S power-profiles-daemon
-sudo rc-update add power-profiles-daemon default
-sudo rc-service power-profiles-daemon start
-```
-
-ii. Install `brave-browser`:
+i. Install `brave-browser`:
 
 ```bash
 paru -S brave-browser
 ```
 
-iii. Add snapper for btrfs snapshots (when ready):
+ii. Add snapper for btrfs snapshots (when ready):
 
 ```bash
 sudo pacman -S snapper
