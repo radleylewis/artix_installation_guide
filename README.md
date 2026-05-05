@@ -1,7 +1,5 @@
 # Artix Installation Guide
 
-Check out the accompanying video tutorial [here](https://www.youtube.com/watch?v=kX4wGhn949I).
-
 Good morning, good afternoon or good evening, wherever you are reading this from. These installation instructions form the foundation of the Artix system that I use on my own Librebooted T480.
 
 The Artix Linux documentation can be found [here](https://wiki.artixlinux.org/Main/Installation).
@@ -10,7 +8,7 @@ This guide uses the following stack:
 
 - [OpenRC](https://wiki.gentoo.org/wiki/OpenRC): A dependency-based init system (Artix is systemd-free).
 - [btrfs](https://btrfs.readthedocs.io/en/latest/): A feature-rich, copy-on-write filesystem for Linux.
-- [LUKS](https://gitlab.com/cryptsetup/cryptsetup/): Full disk encryption based on the dm-crypt kernel module.
+- [LUKS](https://gitlab.com/cryptsetup/cryptsetup/): Full disk encryption based on the dm-crypt kernel module (if you're using Libreboot, check out the next steps [here](https://www.github.com/radleylewis/artix_installation_guide/main/LIBREBOOT_FULL_DISK_ENCRYPTION.md).
 - [zswap](https://www.kernel.org/doc/html/latest/admin-guide/mm/zswap.html): A compressed write-back cache for swap pages, built into the Linux kernel.
 - [Qtile](https://qtile.org/): A full-featured, hackable tiling window manager built/configured with Python.
 - [ly](https://github.com/fairyglade/ly): A lightweight TUI display manager.
@@ -137,7 +135,13 @@ fatlabel /dev/nvme0n1p1 ESP
 # set up LUKS encryption
 cryptsetup luksFormat /dev/nvme0n1p3
 cryptsetup luksOpen /dev/nvme0n1p3 main
+```
 
+> [!example] If you are on a librebooted system and want to leverage Full-Disk Encryption (including `/boot`) you need to ensure it is of type `luks2` and use `argon2id` (libreboot documentation [here](https://libreboot.org/docs/linux/#encrypted-boot-via-luks2-with-argon2)).
+> ```bash
+cryptsetup luksFormat --type luks2 --pbkdf argon2id /dev/nvme0n1p3
+
+```bash
 # format as btrfs inside the LUKS container
 mkfs.btrfs -L MAIN /dev/mapper/main
 ```
@@ -454,6 +458,8 @@ HOOKS=(base udev autodetect modconf kms keyboard keymap block encrypt filesystem
 
 > [!note] `fsck` is removed from HOOKS (it is not required for btrfs). `consolefont` is removed as it requires `terminus-font` and serves no purpose at the LUKS prompt. This guide uses a `udev`-based initramfs. If you are using a `systemd`-based initramfs, replace `encrypt` with `sd-encrypt`.
 
+
+
 Regenerate the initramfs:
 
 ```bash
@@ -462,7 +468,7 @@ mkinitcpio -P
 
 xviii. Configure GRUB:
 
-**[BIOS]** Install GRUB to your disk:
+**[BIOS]** Install GRUB to the EFI partition:
 
 ```bash
 grub-install --recheck /dev/nvme0n1
@@ -578,6 +584,8 @@ artix-chroot /mnt
 ```
 
 From here you can fix your GRUB config, reinstall packages, or regenerate the initramfs as needed.
+
+--- 
 
 ---
 ## Optional Further Steps
