@@ -8,7 +8,7 @@ This guide uses the following stack:
 
 - [OpenRC](https://wiki.gentoo.org/wiki/OpenRC): A dependency-based init system (Artix is systemd-free).
 - [btrfs](https://btrfs.readthedocs.io/en/latest/): A feature-rich, copy-on-write filesystem for Linux.
-- [LUKS](https://gitlab.com/cryptsetup/cryptsetup/): Full disk encryption based on the dm-crypt kernel module (if you're using Libreboot, check out the next steps [here](https://www.github.com/radleylewis/artix_installation_guide/main/LIBREBOOT_FULL_DISK_ENCRYPTION.md).
+- [LUKS](https://gitlab.com/cryptsetup/cryptsetup/): Full disk encryption based on the dm-crypt kernel module (if you're using Libreboot, check out the next steps [here](https://github.com/radleylewis/artix_installation_guide/blob/main/LIBREBOOT_FULL_DISK_ENCRYPTION.md)).
 - [zswap](https://www.kernel.org/doc/html/latest/admin-guide/mm/zswap.html): A compressed write-back cache for swap pages, built into the Linux kernel.
 - [Qtile](https://qtile.org/): A full-featured, hackable tiling window manager built/configured with Python.
 - [ly](https://github.com/fairyglade/ly): A lightweight TUI display manager.
