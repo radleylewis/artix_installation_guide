@@ -102,7 +102,7 @@ v. Partition your disk:
 
 | Partition        | Size            | Type             |
 | ---------------- | --------------- | ---------------- |
-| `/dev/nvme0n1p1` | 2MB             | BIOS Boot        |
+| `/dev/nvme0n1p1` | 2MB             | BIOS Boot (or Linux Filesystem if BIOS Boot not available)       |
 | `/dev/nvme0n1p2` | Match your RAM  | Linux swap       |
 | `/dev/nvme0n1p3` | Remaining space | Linux filesystem |
 
